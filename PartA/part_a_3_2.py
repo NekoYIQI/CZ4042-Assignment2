@@ -17,7 +17,8 @@ CONV_2 = 55
 learning_rate = 0.001
 epochs = 201
 batch_size = 128
-optimizer = ['MomentumOptimizer', 'RMSPropOptimizer', 'AdamOptimizer']
+optimizer = ['GradientDescentOptimizer', 'MomentumOptimizer', 'RMSPropOptimizer', 'AdamOptimizer']
+keep_prob = 0.9
 seed = 0
 np.random.seed(seed)
 tf.set_random_seed(seed)
@@ -66,18 +67,23 @@ def cnn(x):
     W1 = tf.Variable(tf.truncated_normal([9, 9, NUM_CHANNELS, CONV_1], stddev=1.0/np.sqrt(NUM_CHANNELS*9*9)), name='weights_1')
     b1 = tf.Variable(tf.zeros([CONV_1]), name='biases_1')
     conv_1 = tf.nn.relu(tf.nn.conv2d(images, W1, [1, 1, 1, 1], padding='VALID') + b1)
+    conv_1_dropout = tf.nn.dropout(conv_1, keep_prob)
     
     #Pool 1
-    pool_1 = tf.nn.max_pool(conv_1, ksize= [1, 2, 2, 1], strides= [1, 2, 2, 1], padding='VALID', name='pool_1')
+    pool_1 = tf.nn.max_pool(conv_1_dropout, ksize= [1, 2, 2, 1], strides= [1, 2, 2, 1], padding='VALID', name='pool_1')
+    pool_1_dropout = tf.nn.dropout(pool_1, keep_prob)
 
     
     #Conv 2
     W2 = tf.Variable(tf.truncated_normal([5, 5, CONV_1, CONV_2], stddev=1.0/np.sqrt(NUM_CHANNELS*5*5)), name='weights_2')
     b2 = tf.Variable(tf.zeros([CONV_2]), name='biases_2')
-    conv_2 = tf.nn.relu(tf.nn.conv2d(pool_1, W2, [1, 1, 1, 1], padding='VALID') + b2)
+    conv_2 = tf.nn.relu(tf.nn.conv2d(pool_1_dropout, W2, [1, 1, 1, 1], padding='VALID') + b2)
+    conv_2_dropout = tf.nn.dropout(conv_2, keep_prob)
+
     
     #Pool 2
     pool_2 = tf.nn.max_pool(conv_2, ksize= [1, 2, 2, 1], strides= [1, 2, 2, 1], padding='VALID', name='pool_2')
+    pool_2_dropout = tf.nn.dropout(pool_2, keep_prob)
     
     #Fully connected layer    
     dim = pool_2.get_shape()[1].value * pool_2.get_shape()[2].value * pool_2.get_shape()[3].value 
@@ -85,11 +91,12 @@ def cnn(x):
     b_fc = tf.Variable(tf.zeros([300]), name='biases_fc')
     pool_2_flat = tf.reshape(pool_2, [-1, dim])
     fc = tf.nn.relu(tf.matmul(pool_2_flat, W_fc) + b_fc)
+    fc_dropout = tf.nn.dropout(fc, keep_prob)
     
     #Softmax
     W3 = tf.Variable(tf.truncated_normal([300, NUM_CLASSES], stddev=1.0/np.sqrt(300)), name='weights_3')
     b3 = tf.Variable(tf.zeros([NUM_CLASSES]), name='biases_3')
-    logits = tf.matmul(fc, W3) + b3
+    logits = tf.matmul(fc_dropout, W3) + b3
 
     return logits
     
@@ -103,6 +110,8 @@ def main():
     x = tf.placeholder(tf.float32, [None, IMG_SIZE*IMG_SIZE*NUM_CHANNELS])
     y_ = tf.placeholder(tf.float32, [None, NUM_CLASSES])
 
+    keep_prob = tf.Variable(0.9, tf.float32)
+
     logits = cnn(x)
     
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_, logits=logits)
@@ -112,10 +121,10 @@ def main():
     correct_prediction = tf.cast(correct_prediction, tf.float32)
     accuracy = tf.reduce_mean(correct_prediction)
 
-    train_step_1= tf.train.MomentumOptimizer(learning_rate, 0.1).minimize(cross_entropy)
-    train_step_2 = tf.train.RMSPropOptimizer(learning_rate).minimize(cross_entropy)
-    train_step_3 = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
-    
+    train_step_1 = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
+    train_step_2= tf.train.MomentumOptimizer(learning_rate, 0.1).minimize(loss)
+    train_step_3 = tf.train.RMSPropOptimizer(learning_rate).minimize(loss)
+    train_step_4 = tf.train.AdamOptimizer(learning_rate).minimize(loss)    
 
     N = len(trainX)
     idx = np.arange(N)
@@ -123,6 +132,23 @@ def main():
     acc = []
     err = []
     with tf.Session() as sess:
+        print("GradientDescentOptimizer...")
+        sess.run(tf.global_variables_initializer())
+        test_acc = []
+        train_err = []
+        for i in range(epochs):
+            np.random.shuffle(idx)
+            trainX, trainY = trainX[idx], trainY[idx]
+            for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
+                train_step_1.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
+            test_acc.append(accuracy.eval(feed_dict={x: testX, y_: testY}))
+            train_err.append(loss.eval(feed_dict={x: trainX, y_: trainY}))
+            if i%100 == 0:
+                print('iter %d: test accuracy %g'%(i, test_acc[i]))
+                print('iter %d: train error %g'%(i, train_err[i]))
+        acc.append(test_acc)
+        err.append(train_err)
+
         print("MomentumOptimizer...")
         sess.run(tf.global_variables_initializer())
         test_acc = []
