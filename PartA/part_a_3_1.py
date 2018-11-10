@@ -148,7 +148,7 @@ def main():
             np.random.shuffle(idx)
             trainX, trainY = trainX[idx], trainY[idx]
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_step_1.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
+                train_step_2.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
             test_acc.append(accuracy.eval(feed_dict={x: testX, y_: testY}))
             train_err.append(loss.eval(feed_dict={x: trainX, y_: trainY}))
             if i%100 == 0:
@@ -165,7 +165,7 @@ def main():
             np.random.shuffle(idx)
             trainX, trainY = trainX[idx], trainY[idx]
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_step_2.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
+                train_step_3.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
             test_acc.append(accuracy.eval(feed_dict={x: testX, y_: testY}))
             train_err.append(loss.eval(feed_dict={x: trainX, y_: trainY}))
             if i%100 == 0:
@@ -182,7 +182,7 @@ def main():
             np.random.shuffle(idx)
             trainX, trainY = trainX[idx], trainY[idx]
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_step_3.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
+                train_step_4.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
             test_acc.append(accuracy.eval(feed_dict={x: testX, y_: testY}))
             train_err.append(loss.eval(feed_dict={x: trainX, y_: trainY}))
             if i%100 == 0:

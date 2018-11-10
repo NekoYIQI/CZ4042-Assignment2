@@ -1,4 +1,3 @@
-import math
 import tensorflow as tf
 import numpy as np
 import pylab as plt
@@ -82,14 +81,14 @@ def cnn(x):
 
     
     #Pool 2
-    pool_2 = tf.nn.max_pool(conv_2, ksize= [1, 2, 2, 1], strides= [1, 2, 2, 1], padding='VALID', name='pool_2')
+    pool_2 = tf.nn.max_pool(conv_2_dropout, ksize= [1, 2, 2, 1], strides= [1, 2, 2, 1], padding='VALID', name='pool_2')
     pool_2_dropout = tf.nn.dropout(pool_2, keep_prob)
     
     #Fully connected layer    
     dim = pool_2.get_shape()[1].value * pool_2.get_shape()[2].value * pool_2.get_shape()[3].value 
     W_fc = tf.Variable(tf.truncated_normal([dim, 300], stddev=1/np.sqrt(dim)), name='weights_fc')
     b_fc = tf.Variable(tf.zeros([300]), name='biases_fc')
-    pool_2_flat = tf.reshape(pool_2, [-1, dim])
+    pool_2_flat = tf.reshape(pool_2_dropout, [-1, dim])
     fc = tf.nn.relu(tf.matmul(pool_2_flat, W_fc) + b_fc)
     fc_dropout = tf.nn.dropout(fc, keep_prob)
     
@@ -109,8 +108,6 @@ def main():
 
     x = tf.placeholder(tf.float32, [None, IMG_SIZE*IMG_SIZE*NUM_CHANNELS])
     y_ = tf.placeholder(tf.float32, [None, NUM_CLASSES])
-
-    keep_prob = tf.Variable(0.9, tf.float32)
 
     logits = cnn(x)
     
@@ -157,7 +154,7 @@ def main():
             np.random.shuffle(idx)
             trainX, trainY = trainX[idx], trainY[idx]
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_step_1.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
+                train_step_2.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
             test_acc.append(accuracy.eval(feed_dict={x: testX, y_: testY}))
             train_err.append(loss.eval(feed_dict={x: trainX, y_: trainY}))
             if i%100 == 0:
@@ -174,7 +171,7 @@ def main():
             np.random.shuffle(idx)
             trainX, trainY = trainX[idx], trainY[idx]
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_step_2.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
+                train_step_3.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
             test_acc.append(accuracy.eval(feed_dict={x: testX, y_: testY}))
             train_err.append(loss.eval(feed_dict={x: trainX, y_: trainY}))
             if i%100 == 0:
@@ -191,7 +188,7 @@ def main():
             np.random.shuffle(idx)
             trainX, trainY = trainX[idx], trainY[idx]
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_step_3.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
+                train_step_4.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
             test_acc.append(accuracy.eval(feed_dict={x: testX, y_: testY}))
             train_err.append(loss.eval(feed_dict={x: trainX, y_: trainY}))
             if i%100 == 0:
