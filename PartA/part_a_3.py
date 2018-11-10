@@ -15,7 +15,7 @@ NUM_CHANNELS = 3
 CONV_1 = 45
 CONV_2 = 55
 learning_rate = 0.001
-epochs = 501
+epochs = 201
 batch_size = 128
 optimizer = ['MomentumOptimizer', 'RMSPropOptimizer', 'AdamOptimizer']
 seed = 0
@@ -58,13 +58,13 @@ def plot_test_acc(err, acc, hyperparam, label):
     ax2.legend()
     plt.show()
     
-def cnn(train_err, test_acc):
+def cnn(x):
 
     images = tf.reshape(x, [-1, IMG_SIZE, IMG_SIZE, NUM_CHANNELS])
     
     #Conv 1
     W1 = tf.Variable(tf.truncated_normal([9, 9, NUM_CHANNELS, CONV_1], stddev=1.0/np.sqrt(NUM_CHANNELS*9*9)), name='weights_1')
-    b1 = tf.Variable(tf.zeros([conv1]), name='biases_1')
+    b1 = tf.Variable(tf.zeros([CONV_1]), name='biases_1')
     conv_1 = tf.nn.relu(tf.nn.conv2d(images, W1, [1, 1, 1, 1], padding='VALID') + b1)
     
     #Pool 1
@@ -73,7 +73,7 @@ def cnn(train_err, test_acc):
     
     #Conv 2
     W2 = tf.Variable(tf.truncated_normal([5, 5, CONV_1, CONV_2], stddev=1.0/np.sqrt(NUM_CHANNELS*5*5)), name='weights_2')
-    b2 = tf.Variable(tf.zeros([conv2]), name='biases_2')
+    b2 = tf.Variable(tf.zeros([CONV_2]), name='biases_2')
     conv_2 = tf.nn.relu(tf.nn.conv2d(pool_1, W2, [1, 1, 1, 1], padding='VALID') + b2)
     
     #Pool 2
@@ -89,9 +89,9 @@ def cnn(train_err, test_acc):
     #Softmax
     W3 = tf.Variable(tf.truncated_normal([300, NUM_CLASSES], stddev=1.0/np.sqrt(300)), name='weights_3')
     b3 = tf.Variable(tf.zeros([NUM_CLASSES]), name='biases_3')
-    logits = tf.matmul(fc_drop, W3) + b3
+    logits = tf.matmul(fc, W3) + b3
 
-    return logits, keep_prob
+    return logits
     
 def main():
     trainX, trainY = load_data('data_batch_1') 
@@ -103,6 +103,8 @@ def main():
     x = tf.placeholder(tf.float32, [None, IMG_SIZE*IMG_SIZE*NUM_CHANNELS])
     y_ = tf.placeholder(tf.float32, [None, NUM_CLASSES])
 
+    logits = cnn(x)
+    
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_, logits=logits)
     loss = tf.reduce_mean(cross_entropy)
 
@@ -111,7 +113,7 @@ def main():
     accuracy = tf.reduce_mean(correct_prediction)
 
     train_step_1= tf.train.MomentumOptimizer(learning_rate, 0.1).minimize(cross_entropy)
-    train_step_2 = tf.train.RMSPropOptimizer(learning_rate).minimize(cross_entropy).minimize(cross_entropy)
+    train_step_2 = tf.train.RMSPropOptimizer(learning_rate).minimize(cross_entropy)
     train_step_3 = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
     
 
@@ -140,7 +142,7 @@ def main():
 
         print("RMSPropOptimizer...")
         sess.run(tf.global_variables_initializer())
-                test_acc = []
+        test_acc = []
         train_err = []
         for i in range(epochs):
             np.random.shuffle(idx)
@@ -157,7 +159,7 @@ def main():
 
         print("AdamOptimizer...")
         sess.run(tf.global_variables_initializer())
-                test_acc = []
+        test_acc = []
         train_err = []
         for i in range(epochs):
             np.random.shuffle(idx)
@@ -171,7 +173,7 @@ def main():
                 print('iter %d: train error %g'%(i, train_err[i]))
         acc.append(test_acc)
         err.append(train_err)
-    plot_test_acc(err, acc, optimizer, 'optimizer'):
+    plot_test_acc(err, acc, optimizer, 'optimizer')
 
 
 if __name__ == '__main__':
