@@ -11,6 +11,7 @@ FILTER_SHAPE2 = [20, 1]
 POOLING_WINDOW = 4
 POOLING_STRIDE = 2
 MAX_LABEL = 15
+EMBEDDING_SIZE = 50
 
 no_epochs = 501
 batch_size = 128
@@ -21,43 +22,44 @@ seed = 0
 tf.set_random_seed(seed)
 
 def word_cnn_model(x):
-  
-  input_layer = tf.reshape(
-      tf.one_hot(x, 256), [-1, MAX_DOCUMENT_LENGTH, 256, 1])
 
+  word_vectors = tf.contrib.layers.embed_sequence(
+      x, vocab_size=n_words, embed_dim=EMBEDDING_SIZE)
+  word_vectors = tf.expand_dims(word_vectors, 3)
   with tf.variable_scope('CNN_Layer1'):
-    conv1 = tf.layers.conv2d(
-        input_layer,
-        filters=N_FILTERS,
-        kernel_size=FILTER_SHAPE1,
-        padding='VALID',
-        activation=tf.nn.relu)
-    pool1 = tf.layers.max_pooling2d(
-        conv1,
-        pool_size=POOLING_WINDOW,
-        strides=POOLING_STRIDE,
-        padding='SAME')
+      # Apply Convolution filtering on input sequence.
+      conv1 = tf.layers.conv2d(
+          word_vectors,
+          filters=N_FILTERS,
+          kernel_size=FILTER_SHAPE1,
+          padding='VALID',
+          # Add a ReLU for non linearity.
+          activation=tf.nn.relu)
+      # Max pooling across output of Convolution+Relu.
+      pool1 = tf.layers.max_pooling2d(
+          conv1,
+          pool_size=POOLING_WINDOW,
+          strides=POOLING_STRIDE,
+          padding='SAME')
+      # Transpose matrix so that n_filters from convolution becomes width.
+      pool1 = tf.transpose(pool1, [0, 1, 3, 2])
+  with tf.variable_scope('CNN_Layer2'):
+      # Second level of convolution filtering.
+      conv2 = tf.layers.conv2d(
+          pool1,
+          filters=N_FILTERS,
+          kernel_size=FILTER_SHAPE2,
+          padding='VALID')
+      # Max across each filter to get useful features for classification.
+      pool2 = tf.squeeze(tf.reduce_max(conv2, 1), axis=[1])
 
-  with tf.variable_scope('CNN_Layer2'):  
-    conv2 = tf.layers.conv2d(
-        pool1,
-        filters=N_FILTERS,
-        kernel_size=FILTER_SHAPE2,
-        padding='VALID',
-        activation=tf.nn.relu)
-    pool2 = tf.layers.max_pooling2d(
-        conv2,
-        pool_size=POOLING_WINDOW,
-        strides=POOLING_STRIDE,
-        padding='SAME')
-    pool2 = tf.squeeze(tf.reduce_max(pool2, 1), squeeze_dims=[1])
-
+  # Apply regular WX + B and classification.
   logits = tf.layers.dense(pool2, MAX_LABEL, activation=None)
 
-  return input_layer, logits
+  return logits
 
 
-def read_data_chars():
+def read_data_words():
   
   x_train, y_train, x_test, y_test = [], [], [], []
 
@@ -79,13 +81,16 @@ def read_data_chars():
   y_test = pandas.Series(y_test)
   
   
-  char_processor = tf.contrib.learn.preprocessing.ByteProcessor(MAX_DOCUMENT_LENGTH)
-  x_train = np.array(list(char_processor.fit_transform(x_train)))
-  x_test = np.array(list(char_processor.transform(x_test)))
+  vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(MAX_DOCUMENT_LENGTH)
+  x_train = np.array(list(vocab_processor.fit_transform(x_train)))
+  x_test = np.array(list(vocab_processor.transform(x_test)))
   y_train = y_train.values
   y_test = y_test.values
+
+  no_words = len(vocab_processor.vocabulary_)
+  print('Total words: %d' % no_words)
   
-  return x_train, y_train, x_test, y_test
+  return x_train, y_train, x_test, y_test, no_words
 
 def plot_err_acc(err, acc):
     num_epoch = len(err)
@@ -104,8 +109,8 @@ def plot_err_acc(err, acc):
 
   
 def main():
-  
-  x_train, y_train, x_test, y_test = read_data_chars()
+  global n_words
+  x_train, y_train, x_test, y_test, n_words = read_data_words()
 
   print(len(x_train))
   print(len(x_test))
@@ -114,7 +119,7 @@ def main():
   x = tf.placeholder(tf.int64, [None, MAX_DOCUMENT_LENGTH])
   y_ = tf.placeholder(tf.int64)
 
-  inputs, logits = char_cnn_model(x)
+  logits = word_cnn_model(x)
 
   # Optimizer
   entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.one_hot(y_, MAX_LABEL), logits=logits))
