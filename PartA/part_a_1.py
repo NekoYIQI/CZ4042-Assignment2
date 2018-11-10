@@ -94,15 +94,6 @@ def plot_err_acc(err, acc):
     ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
-
-def plot_figure(figure, layer_name, layer):
-    plt.figure()
-    plt.gray()
-    plt.subplot(3,1,1), plt.axis('off'), plt.imshow(layer[0,:,:,0])
-    plt.subplot(3,1,2), plt.axis('off'), plt.imshow(layer[0,:,:,1])
-    plt.subplot(3,1,3), plt.axis('off'), plt.imshow(layer[0,:,:,2])
-    plt.savefig('./figures/' + figure + '_' + layer_name + '.png')
-    plt.show()
     
 def main():
 
@@ -138,6 +129,8 @@ def main():
         test_acc = []
         train_err = []
         for i in range(epochs):
+            np.random.shuffle(idx)
+            trainX, trainY = trainX[idx], trainY[idx]
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
                 train_step.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
 
@@ -156,15 +149,47 @@ def main():
         X1 = testX[ind_1]
         X2 = testX[ind_2]
         c1_, p1_, c2_, p2_ = sess.run([c1, p1, c2, p2], {x: X1.reshape(-1, 32*32*3)})
-        plot_figure('figure1 ', 'conv1', c1_)
-        plot_figure('figure1 ', 'pool1', p1_)
-        plot_figure('figure1 ', 'conv2', c2_)
-        plot_figure('figure1 ', 'pool2', p2_)
+        for i in range(50):
+            plt.subplot(5, 10, i+1)
+            plt.axis('off')
+            plt.imshow(c1_[0,:,:,i])
+        plt.savefig('./figure1_conv1.png')
+        for i in range(50):
+            plt.subplot(5, 10, i+1)
+            plt.axis('off')
+            plt.imshow(p1_[0,:,:,i])
+        plt.savefig('./figure1_pool1.png')
+        for i in range(60):
+            plt.subplot(6, 10, i+1)
+            plt.axis('off')
+            plt.imshow(c2_[0,:,:,i])
+        plt.savefig('./figure1_conv2.png')
+        for i in range(60):
+            plt.subplot(6, 10, i+1)
+            plt.axis('off')
+            plt.imshow(p2_[0,:,:,i])
+        plt.savefig('./figure1_pool2.png')
         c1_, p1_, c2_, p2_ = sess.run([c1, p1, c2, p2], {x: X2.reshape(-1, 32*32*3)})
-        plot_figure('figure2 ', 'conv1', c1_)
-        plot_figure('figure2 ', 'pool1', p1_)
-        plot_figure('figure2 ', 'conv2', c2_)
-        plot_figure('figure2 ', 'pool2', p2_)
+        for i in range(50):
+            plt.subplot(5, 10, i+1)
+            plt.axis('off')
+            plt.imshow(c1_[0,:,:,i])
+        plt.savefig('./figure2_conv1.png')
+        for i in range(50):
+            plt.subplot(5, 10, i+1)
+            plt.axis('off')
+            plt.imshow(p1_[0,:,:,i])
+        plt.savefig('./figure2_pool1.png')
+        for i in range(60):
+            plt.subplot(6, 10, i+1)
+            plt.axis('off')
+            plt.imshow(c2_[0,:,:,i])
+        plt.savefig('./figure2_conv2.png')
+        for i in range(60):
+            plt.subplot(6, 10, i+1)
+            plt.axis('off')
+            plt.imshow(p2_[0,:,:,i])
+        plt.savefig('./figure2_pool2.png')
 
 if __name__ == '__main__':
     main()
