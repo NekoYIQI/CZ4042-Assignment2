@@ -122,7 +122,8 @@ def main():
   logits = word_cnn_model(x)
 
   # Optimizer
-  entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.one_hot(y_, MAX_LABEL), logits=logits))
+  entropy = tf.reduce_mean(
+      tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.one_hot(y_, MAX_LABEL), logits=logits))
   train_op = tf.train.AdamOptimizer(lr).minimize(entropy)
 
   # Accuracy
