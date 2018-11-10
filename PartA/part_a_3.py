@@ -17,7 +17,7 @@ CONV_2 = 55
 learning_rate = 0.001
 epochs = 201
 batch_size = 128
-optimizer = ['MomentumOptimizer', 'RMSPropOptimizer', 'AdamOptimizer']
+optimizer = ['GradientDescentOptimizer', 'MomentumOptimizer', 'RMSPropOptimizer', 'AdamOptimizer']
 seed = 0
 np.random.seed(seed)
 tf.set_random_seed(seed)
@@ -112,10 +112,10 @@ def main():
     correct_prediction = tf.cast(correct_prediction, tf.float32)
     accuracy = tf.reduce_mean(correct_prediction)
 
-    train_step_1= tf.train.MomentumOptimizer(learning_rate, 0.1).minimize(cross_entropy)
-    train_step_2 = tf.train.RMSPropOptimizer(learning_rate).minimize(cross_entropy)
-    train_step_3 = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
-    
+    train_step_1 = tf.train.GradientDescentOptimizer(learning_rate).minimize(cross_entropy)
+    train_step_2= tf.train.MomentumOptimizer(learning_rate, 0.1).minimize(cross_entropy)
+    train_step_3 = tf.train.RMSPropOptimizer(learning_rate).minimize(cross_entropy)
+    train_step_4 = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)    
 
     N = len(trainX)
     idx = np.arange(N)
@@ -123,6 +123,23 @@ def main():
     acc = []
     err = []
     with tf.Session() as sess:
+        print("GradientDescentOptimizer...")
+        sess.run(tf.global_variables_initializer())
+        test_acc = []
+        train_err = []
+        for i in range(epochs):
+            np.random.shuffle(idx)
+            trainX, trainY = trainX[idx], trainY[idx]
+            for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
+                train_step_1.run(feed_dict={x: trainX[start:end], y_: trainY[start:end]})
+            test_acc.append(accuracy.eval(feed_dict={x: testX, y_: testY}))
+            train_err.append(loss.eval(feed_dict={x: trainX, y_: trainY}))
+            if i%100 == 0:
+                print('iter %d: test accuracy %g'%(i, test_acc[i]))
+                print('iter %d: train error %g'%(i, train_err[i]))
+        acc.append(test_acc)
+        err.append(train_err)
+
         print("MomentumOptimizer...")
         sess.run(tf.global_variables_initializer())
         test_acc = []
