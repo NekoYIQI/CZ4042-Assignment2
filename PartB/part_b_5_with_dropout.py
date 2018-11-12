@@ -3,6 +3,7 @@ import pandas
 import tensorflow as tf
 import csv
 import pylab as plt
+import time
 
 MAX_DOCUMENT_LENGTH = 100
 HIDDEN_SIZE = 20
@@ -269,6 +270,7 @@ def main():
 
     with tf.Session()as sess:
 
+        runtime = []
         print("CharCNN...")
         sess.run(tf.global_variables_initializer())
 
@@ -276,6 +278,7 @@ def main():
         N = len(x_train_char)
         test_acc = []
         train_err = []
+        start_time = time.time()
         for i in range(no_epochs):
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
                 train_op_1.run(feed_dict={x: x_train_char[start:end], y_: y_train_char[start:end]})
@@ -287,6 +290,8 @@ def main():
                 print('iter %d: test accuracy %g' % (i, test_acc[i]))
                 print('iter %d: cross entropy %g' % (i, train_err[i]))
 
+        run_time = time.time() - start_time
+        runtime.append(run_time)
         plot_err_acc(train_err, test_acc)
 
         print("WordCNN...")
@@ -296,6 +301,7 @@ def main():
         N = len(x_train_word)
         test_acc = []
         train_err = []
+        start_time = time.time()
         for i in range(no_epochs):
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
                 train_op_2.run(feed_dict={x: x_train_word[start:end], y_: y_train_word[start:end]})
@@ -307,6 +313,8 @@ def main():
                 print('iter %d: test accuracy %g' % (i, test_acc[i]))
                 print('iter %d: cross entropy %g' % (i, train_err[i]))
 
+        run_time = time.time() - start_time
+        runtime.append(run_time)
         plot_err_acc(train_err, test_acc)
 
         print("CharRNN...")
@@ -316,6 +324,7 @@ def main():
         N = len(x_train_char)
         test_acc = []
         train_err = []
+        start_time = time.time()
         for i in range(no_epochs):
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
                 train_op_3.run(feed_dict={x: x_train_char[start:end], y_: y_train_char[start:end]})
@@ -327,6 +336,10 @@ def main():
                 print('iter %d: test accuracy %g' % (i, test_acc[i]))
                 print('iter %d: cross entropy %g' % (i, train_err[i]))
 
+
+        run_time = time.time() - start_time
+        runtime.append(run_time)
+
         plot_err_acc(train_err, test_acc)
 
         print("WordRNN...")
@@ -336,6 +349,7 @@ def main():
         N = len(x_train_word)
         test_acc = []
         train_err = []
+        start_time = time.time()
         for i in range(no_epochs):
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
                 train_op_4.run(feed_dict={x: x_train_word[start:end], y_: y_train_word[start:end]})
@@ -347,6 +361,9 @@ def main():
                 print('iter %d: test accuracy %g' % (i, test_acc[i]))
                 print('iter %d: cross entropy %g' % (i, train_err[i]))
 
+
+        run_time = time.time() - start_time
+        runtime.append(run_time)
         plot_err_acc(train_err, test_acc)
 
 
