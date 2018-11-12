@@ -6,12 +6,12 @@ import pylab as plt
 
 MAX_DOCUMENT_LENGTH = 100
 N_FILTERS = 10
-FILTER_SHAPE1 = [20, 256]
-FILTER_SHAPE2 = [20, 1]
+EMBEDDING_SIZE = 20
+FILTER_SHAPE1 = [20, 20]
+FILTER_SHAPE2 = [20, 10]
 POOLING_WINDOW = 4
 POOLING_STRIDE = 2
 MAX_LABEL = 15
-EMBEDDING_SIZE = 50
 
 no_epochs = 501
 batch_size = 128
@@ -51,7 +51,13 @@ def word_cnn_model(x):
           kernel_size=FILTER_SHAPE2,
           padding='VALID')
       # Max across each filter to get useful features for classification.
-      pool2 = tf.squeeze(tf.reduce_max(conv2, 1), axis=[1])
+      pool2 = tf.layers.max_pooling2d(
+          conv2,
+          pool_size=POOLING_WINDOW,
+          strides=POOLING_STRIDE,
+          padding='SAME'
+      )
+      pool2 = tf.squeeze(tf.reduce_max(pool2, 1), axis=[1])
 
   # Apply regular WX + B and classification.
   logits = tf.layers.dense(pool2, MAX_LABEL, activation=None)
