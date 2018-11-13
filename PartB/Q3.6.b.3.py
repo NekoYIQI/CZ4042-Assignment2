@@ -18,6 +18,10 @@ seed = 10
 tf.set_random_seed(seed)
 
 
+def make_cell():
+    return tf.nn.rnn_cell.GRUCell(HIDDEN_SIZE)
+
+
 def rnn_model(x):
     # word_vectors = tf.contrib.layers.embed_sequence(
     #     x, vocab_size=n_words, embed_dim=EMBEDDING_SIZE)
@@ -27,14 +31,13 @@ def rnn_model(x):
     byte_vectors = tf.one_hot(x, 256, 1., 0.)
     byte_list = tf.unstack(byte_vectors, axis=1)
 
-    cell1 = tf.nn.rnn_cell.GRUCell(HIDDEN_SIZE)
-    cell = tf.nn.rnn_cell.MultiRNNCell([cell1 for _ in range(2)])
+    cell = tf.nn.rnn_cell.MultiRNNCell([make_cell() for _ in range(2)])
     _, encoding = tf.nn.static_rnn(cell, byte_list, dtype=tf.float32)
-    dense1=tf.layers.dense(encoding,MAX_LABEL, activation=None)
+    dense1=tf.layers.dense(encoding[1],MAX_LABEL, activation=None)
     logits = tf.layers.dense(dense1, MAX_LABEL, activation=None)
 
-
     return logits
+
 
 
 def data_read_words():
