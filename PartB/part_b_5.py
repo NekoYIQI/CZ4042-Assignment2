@@ -22,7 +22,7 @@ model = ['CNN_char', 'CNN_word', 'RNN_char','RNN_word']
 POOLING_WINDOW = 4
 POOLING_STRIDE = 2
 
-no_epochs = 21
+no_epochs = 201
 lr = 0.01
 
 runtime = []

@@ -8,7 +8,7 @@ MAX_DOCUMENT_LENGTH = 100
 HIDDEN_SIZE = 20
 MAX_LABEL = 15
 EMBEDDING_SIZE = 50
-epochs = 101
+epochs = 201
 batch_size = 128
 
 lr = 0.01

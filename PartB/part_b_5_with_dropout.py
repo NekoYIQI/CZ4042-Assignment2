@@ -23,7 +23,7 @@ FILTER_SHAPE2_COV = [20, 10]
 POOLING_WINDOW = 4
 POOLING_STRIDE = 2
 
-no_epochs = 101
+no_epochs = 201
 lr = 0.01
 keep_prob = 0.9
 
@@ -229,7 +229,7 @@ def plot_err_acc(err, acc, hyperparam, label):
     ax2.set_ylabel('Training error')
     ax1.legend()
     ax2.legend()
-    plt.savefig('./Figure/q_5.png')
+    plt.savefig('./Figure/q_5_with_dropout.png')
     plt.show()
 
 def NN_Model(i):

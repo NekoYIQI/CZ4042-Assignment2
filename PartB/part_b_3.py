@@ -8,7 +8,7 @@ MAX_DOCUMENT_LENGTH = 100
 HIDDEN_SIZE = 20
 MAX_LABEL = 15
 EMBEDDING_SIZE = 50
-epochs = 101
+epochs = 501
 batch_size = 128
 
 lr = 0.01
@@ -36,7 +36,7 @@ def rnn_model(x):
     return logits
 
 
-def data_read_words():
+def data_read_char():
     x_train, y_train, x_test, y_test = [], [], [], []
 
     with open('train_medium.csv', encoding='utf-8') as filex:
@@ -91,7 +91,7 @@ def plot_figure(figure, layer_name, layer):
     plt.show()
 
 def main():
-    trainX, trainY, testX, testY = data_read_words()
+    trainX, trainY, testX, testY = data_read_char()
 
     # Create the model
     x = tf.placeholder(tf.int64, [None, MAX_DOCUMENT_LENGTH])

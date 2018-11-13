@@ -15,7 +15,7 @@ MAX_LABEL = 15
 
 no_epochs = 501
 batch_size = 128
-lr = 0.01
+lr = 0.001
 
 tf.logging.set_verbosity(tf.logging.ERROR)
 seed = 0
