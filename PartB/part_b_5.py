@@ -22,7 +22,7 @@ model = ['CNN_char', 'CNN_word', 'RNN_char','RNN_word']
 POOLING_WINDOW = 4
 POOLING_STRIDE = 2
 
-no_epochs = 51
+no_epochs = 21
 lr = 0.01
 
 runtime = []
@@ -145,30 +145,25 @@ def read_data_chars():
     with open('train_medium.csv', encoding='utf-8') as filex:
         reader = csv.reader(filex)
         for row in reader:
-            x_train.append(row[2])
+            x_train.append(row[1])
             y_train.append(int(row[0]))
 
-    with open("test_medium.csv", encoding='utf-8') as filex:
+    with open('test_medium.csv', encoding='utf-8') as filex:
         reader = csv.reader(filex)
         for row in reader:
-            x_test.append(row[2])
+            x_test.append(row[1])
             y_test.append(int(row[0]))
 
     x_train = pandas.Series(x_train)
     y_train = pandas.Series(y_train)
     x_test = pandas.Series(x_test)
     y_test = pandas.Series(y_test)
+
+    char_processor = tf.contrib.learn.preprocessing.ByteProcessor(MAX_DOCUMENT_LENGTH)
+    x_train = np.array(list(char_processor.fit_transform(x_train)))
+    x_test = np.array(list(char_processor.transform(x_test)))
     y_train = y_train.values
     y_test = y_test.values
-
-    char_processor = tf.contrib.learn.preprocessing.ByteProcessor(
-        MAX_DOCUMENT_LENGTH)
-
-    x_transform_train = char_processor.fit_transform(x_train)
-    x_transform_test = char_processor.transform(x_test)
-
-    x_train = np.array(list(x_transform_train))
-    x_test = np.array(list(x_transform_test))
 
     return x_train, y_train, x_test, y_test
 
@@ -224,7 +219,7 @@ def plot_err_acc(err, acc, hyperparam, label):
     ax2.set_ylabel('Training error')
     ax1.legend()
     ax2.legend()
-    plt.savefig('./figures/q_5.png')
+    plt.savefig('./Figure/q_5.png')
     plt.show()
 
 def NN_Model(i):
