@@ -9,7 +9,7 @@ MAX_DOCUMENT_LENGTH = 100
 HIDDEN_SIZE = 20
 MAX_LABEL = 15
 EMBEDDING_SIZE = 50
-epochs = 101
+model = ['CNN_char', 'CNN_word', 'RNN_char','RNN_word']
 batch_size = 128
 
 N_FILTERS = 10
@@ -26,6 +26,10 @@ POOLING_STRIDE = 2
 no_epochs = 101
 lr = 0.01
 keep_prob = 0.9
+
+runtime = []
+acc = []
+err = []
 
 
 def char_cnn_model(x):
@@ -66,10 +70,10 @@ def char_cnn_model(x):
 
     return logits
 
-def word_cnn_model(x):
+def word_cnn_model(x, n_words):
 
   word_vectors = tf.contrib.layers.embed_sequence(
-      x, vocab_size=n_words, embed_dim=EMBEDDING_SIZE)
+      x, vocab_size=n_words, embed_dim=EMBEDDING_SIZE_COV)
   word_vectors = tf.expand_dims(word_vectors, 3)
   with tf.variable_scope('CNN_Layer3'):
       # Apply Convolution filtering on input sequence.
@@ -127,7 +131,7 @@ def char_rnn_model(x):
 
     return logits
 
-def word_rnn_model(x):
+def word_rnn_model(x, n_words):
 
     with tf.variable_scope('RNN_Layer2'):
 
@@ -180,25 +184,30 @@ def read_data_words():
     with open('train_medium.csv', encoding='utf-8') as filex:
         reader = csv.reader(filex)
         for row in reader:
-            x_train.append(row[1])
+            x_train.append(row[2])
             y_train.append(int(row[0]))
 
-    with open('test_medium.csv', encoding='utf-8') as filex:
+    with open("test_medium.csv", encoding='utf-8') as filex:
         reader = csv.reader(filex)
         for row in reader:
-            x_test.append(row[1])
+            x_test.append(row[2])
             y_test.append(int(row[0]))
 
     x_train = pandas.Series(x_train)
     y_train = pandas.Series(y_train)
     x_test = pandas.Series(x_test)
     y_test = pandas.Series(y_test)
-
-    vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(MAX_DOCUMENT_LENGTH)
-    x_train = np.array(list(vocab_processor.fit_transform(x_train)))
-    x_test = np.array(list(vocab_processor.transform(x_test)))
     y_train = y_train.values
     y_test = y_test.values
+
+    vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
+        MAX_DOCUMENT_LENGTH)
+
+    x_transform_train = vocab_processor.fit_transform(x_train)
+    x_transform_test = vocab_processor.transform(x_test)
+
+    x_train = np.array(list(x_transform_train))
+    x_test = np.array(list(x_transform_test))
 
     no_words = len(vocab_processor.vocabulary_)
     print('Total words: %d' % no_words)
@@ -206,166 +215,95 @@ def read_data_words():
     return x_train, y_train, x_test, y_test, no_words
 
 
-def plot_err_acc(err, acc):
-    num_epoch = len(err)
+def plot_err_acc(err, acc, hyperparam, label):
+    n = len(hyperparam)
+    num_epoch = len(acc[0])
 
     fig, [ax1, ax2] = plt.subplots(nrows=2, ncols=1, figsize=(6, 10))
-    ax1.plot(range(num_epoch), err)
-    ax2.plot(range(num_epoch), acc)
-
+    for i in range(n):
+        ax1.plot(range(num_epoch), acc[i], label='{}={}'.format(label, hyperparam[i]))
+        ax2.plot(range(num_epoch), err[i], label='{}={}'.format(label, hyperparam[i]))
     ax1.set_xlabel('epoch')
+    ax1.set_ylabel('Testing accuracy')
     ax2.set_xlabel('epoch')
-    ax1.set_ylabel('Train Errors')
-    ax2.set_ylabel('Test Accuracy')
-    ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax2.set_ylabel('Training error')
+    ax1.legend()
+    ax2.legend()
+    plt.savefig('./Figure/q_5.png')
     plt.show()
 
+def NN_Model(i):
 
-def main():
-    global n_words
-    x_train_char, y_train_char, x_test_char, y_test_char = read_data_chars()
-    x_train_word, y_train_word, x_test_word, y_test_word, n_words= read_data_words()
+    if i == 0 or i == 2:
+        x_train, y_train, x_test, y_test= read_data_chars()
+    if i == 1 or i == 3:
+        x_train, y_train, x_test, y_test, n_words = read_data_words()
 
     # Create the model
-    x = tf.placeholder(tf.int64, [None, MAX_DOCUMENT_LENGTH])
-    y_ = tf.placeholder(tf.int64)
+    x1 = tf.placeholder(tf.int64, [None, MAX_DOCUMENT_LENGTH])
+    y_1 = tf.placeholder(tf.int64)
 
-    logits_1 = char_cnn_model(x)
-    logits_2 = word_cnn_model(x)
-    logits_3 = char_rnn_model(x)
-    logits_4 = word_rnn_model(x)
+    if i == 0:
+        logits_1 = char_cnn_model(x1)
+    if i == 1:
+        logits_1 = word_cnn_model(x1, n_words)
+    if i == 2:
+        logits_1 = char_rnn_model(x1)
+    if i == 3:
+        logits_1 = word_rnn_model(x1, n_words)
 
     # Optimizer
     entropy_1 = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.one_hot(y_, MAX_LABEL), logits=logits_1))
-    entropy_2 = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.one_hot(y_, MAX_LABEL), logits=logits_2))
-    entropy_3 = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.one_hot(y_, MAX_LABEL), logits=logits_3))
-    entropy_4 = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.one_hot(y_, MAX_LABEL), logits=logits_4))
+        tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf.one_hot(y_1, MAX_LABEL), logits=logits_1))
 
     train_op_1 = tf.train.AdamOptimizer(lr).minimize(entropy_1)
-    train_op_2 = tf.train.AdamOptimizer(lr).minimize(entropy_2)
-    train_op_3 = tf.train.AdamOptimizer(lr).minimize(entropy_3)
-    train_op_4 = tf.train.AdamOptimizer(lr).minimize(entropy_4)
 
     # Accuracy
-    correct_prediction = tf.equal(tf.argmax(logits_1, 1), y_)
+    correct_prediction = tf.equal(tf.argmax(logits_1, 1), y_1)
     correct_prediction = tf.cast(correct_prediction, tf.float32)
     accuracy_1 = tf.reduce_mean(correct_prediction)
 
-    correct_prediction = tf.equal(tf.argmax(logits_2, 1), y_)
-    correct_prediction = tf.cast(correct_prediction, tf.float32)
-    accuracy_2 = tf.reduce_mean(correct_prediction)
+    with tf.Session() as sess:
 
-    correct_prediction = tf.equal(tf.argmax(logits_3, 1), y_)
-    correct_prediction = tf.cast(correct_prediction, tf.float32)
-    accuracy_3 = tf.reduce_mean(correct_prediction)
 
-    correct_prediction = tf.equal(tf.argmax(logits_4, 1), y_)
-    correct_prediction = tf.cast(correct_prediction, tf.float32)
-    accuracy_4 = tf.reduce_mean(correct_prediction)
+        print(model[i] + "...")
 
-    with tf.Session()as sess:
-
-        runtime = []
-        print("CharCNN...")
         sess.run(tf.global_variables_initializer())
 
         # training
-        N = len(x_train_char)
+        N = len(x_train)
         test_acc = []
         train_err = []
         start_time = time.time()
         for i in range(no_epochs):
             for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_op_1.run(feed_dict={x: x_train_char[start:end], y_: y_train_char[start:end]})
+                train_op_1.run(feed_dict={x1: x_train[start:end], y_1: y_train[start:end]})
 
-            test_acc.append(accuracy_1.eval(feed_dict={x: x_test_char, y_: y_test_char}))
-            train_err.append(entropy_1.eval(feed_dict={x: x_train_char, y_: y_train_char}))
-
-            if i % 10 == 0:
-                print('iter %d: test accuracy %g' % (i, test_acc[i]))
-                print('iter %d: cross entropy %g' % (i, train_err[i]))
-
-        run_time = time.time() - start_time
-        runtime.append(run_time)
-        plot_err_acc(train_err, test_acc)
-
-        print("WordCNN...")
-        sess.run(tf.global_variables_initializer())
-
-        # training
-        N = len(x_train_word)
-        test_acc = []
-        train_err = []
-        start_time = time.time()
-        for i in range(no_epochs):
-            for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_op_2.run(feed_dict={x: x_train_word[start:end], y_: y_train_word[start:end]})
-
-            test_acc.append(accuracy_2.eval(feed_dict={x: x_test_word, y_: y_test_word}))
-            train_err.append(entropy_2.eval(feed_dict={x: x_train_word, y_: y_train_word}))
+            test_acc.append(accuracy_1.eval(feed_dict={x1: x_test, y_1: y_test}))
+            train_err.append(entropy_1.eval(feed_dict={x1: x_train, y_1: y_train}))
 
             if i % 10 == 0:
                 print('iter %d: test accuracy %g' % (i, test_acc[i]))
                 print('iter %d: cross entropy %g' % (i, train_err[i]))
-
-        run_time = time.time() - start_time
-        runtime.append(run_time)
-        plot_err_acc(train_err, test_acc)
-
-        print("CharRNN...")
-        sess.run(tf.global_variables_initializer())
-
-        # training
-        N = len(x_train_char)
-        test_acc = []
-        train_err = []
-        start_time = time.time()
-        for i in range(no_epochs):
-            for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_op_3.run(feed_dict={x: x_train_char[start:end], y_: y_train_char[start:end]})
-
-            test_acc.append(accuracy_3.eval(feed_dict={x: x_test_char, y_: y_test_char}))
-            train_err.append(entropy_3.eval(feed_dict={x: x_train_char, y_: y_train_char}))
-
-            if i % 10 == 0:
-                print('iter %d: test accuracy %g' % (i, test_acc[i]))
-                print('iter %d: cross entropy %g' % (i, train_err[i]))
-
-
+        acc.append(test_acc)
+        err.append(train_err)
         run_time = time.time() - start_time
         runtime.append(run_time)
 
-        plot_err_acc(train_err, test_acc)
 
-        print("WordRNN...")
-        sess.run(tf.global_variables_initializer())
+def main():
 
-        # training
-        N = len(x_train_word)
-        test_acc = []
-        train_err = []
-        start_time = time.time()
-        for i in range(no_epochs):
-            for start, end in zip(range(0, N, batch_size), range(batch_size, N, batch_size)):
-                train_op_4.run(feed_dict={x: x_train_word[start:end], y_: y_train_word[start:end]})
+        for i in range(4):
+            NN_Model(i)
+        # plot test accuracy
+        plot_err_acc(err, acc, model, "Model")
+        # plot run time
+        plt.figure(1)
+        plt.plot(model, runtime)
+        plt.xlabel('model')
+        plt.ylabel('run time')
 
-            test_acc.append(accuracy_4.eval(feed_dict={x: x_test_word, y_: y_test_word}))
-            train_err.append(entropy_4.eval(feed_dict={x: x_train_word, y_: y_train_word}))
-
-            if i % 10 == 0:
-                print('iter %d: test accuracy %g' % (i, test_acc[i]))
-                print('iter %d: cross entropy %g' % (i, train_err[i]))
-
-
-        run_time = time.time() - start_time
-        runtime.append(run_time)
-        plot_err_acc(train_err, test_acc)
-
+        plt.show()
 
 if __name__ == '__main__':
     main()
