@@ -26,7 +26,8 @@ no_epochs = 51
 lr = 0.01
 
 runtime = []
-
+acc = []
+err = []
 
 
 def char_cnn_model(x):
@@ -209,19 +210,21 @@ def read_data_words():
     return x_train, y_train, x_test, y_test, no_words
 
 
-def plot_err_acc(err, acc):
-    num_epoch = len(err)
+def plot_err_acc(err, acc, hyperparam, label):
+    n = len(hyperparam)
+    num_epoch = len(acc[0])
 
     fig, [ax1, ax2] = plt.subplots(nrows=2, ncols=1, figsize=(6, 10))
-    ax1.plot(range(num_epoch), err)
-    ax2.plot(range(num_epoch), acc)
-
+    for i in range(n):
+        ax1.plot(range(num_epoch), acc[i], label='{}={}'.format(label, hyperparam[i]))
+        ax2.plot(range(num_epoch), err[i], label='{}={}'.format(label, hyperparam[i]))
     ax1.set_xlabel('epoch')
+    ax1.set_ylabel('Testing accuracy')
     ax2.set_xlabel('epoch')
-    ax1.set_ylabel('Train Errors')
-    ax2.set_ylabel('Test Accuracy')
-    ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax2.set_ylabel('Training error')
+    ax1.legend()
+    ax2.legend()
+    plt.savefig('./figures/q_5.png')
     plt.show()
 
 def NN_Model(i):
@@ -277,16 +280,18 @@ def NN_Model(i):
             if i % 10 == 0:
                 print('iter %d: test accuracy %g' % (i, test_acc[i]))
                 print('iter %d: cross entropy %g' % (i, train_err[i]))
+        acc.append(test_acc)
+        err.append(train_err)
         run_time = time.time() - start_time
         runtime.append(run_time)
 
-        plot_err_acc(train_err, test_acc)
 
 def main():
 
-        for i in range(2,4):
+        for i in range(4):
             NN_Model(i)
-
+        # plot test accuracy
+        plot_err_acc(err, acc, model, "Model")
         # plot run time
         plt.figure(1)
         plt.plot(model, runtime)
