@@ -18,6 +18,10 @@ seed = 10
 tf.set_random_seed(seed)
 
 
+def make_cell():
+    return tf.nn.rnn_cell.GRUCell(HIDDEN_SIZE)
+
+
 def rnn_model(x):
     word_vectors = tf.contrib.layers.embed_sequence(
          x, vocab_size=n_words, embed_dim=EMBEDDING_SIZE)
@@ -26,11 +30,12 @@ def rnn_model(x):
     #byte_vectors = tf.one_hot(x, 256, 1., 0.)
     #byte_list = tf.unstack(byte_vectors, axis=1)
 
-    cell1 = tf.nn.rnn_cell.GRUCell(HIDDEN_SIZE)
-    cell = tf.nn.rnn_cell.MultiRNNCell([cell1 for _ in range(2)])
-    _, encoding = tf.nn.static_rnn(cell, byte_list, dtype=tf.float32)
-    dense1=tf.layers.dense(encoding,MAX_LABEL, activation=None)
-    logits = tf.layers.dense(dense1, MAX_LABEL, activation=None)
+
+    cell = tf.nn.rnn_cell.MultiRNNCell([make_cell() for _ in range(2)])
+    _, encoding = tf.nn.static_rnn(cell, word_list, dtype=tf.float32)
+
+    dense1 = tf.layers.dense(encoding[1], MAX_LABEL, activation=None)
+    logits = tf.layers.dense(dense1,MAX_LABEL,activation=None)
 
 
     return logits, word_list
@@ -58,16 +63,19 @@ def data_read_words():
     y_train = y_train.values
     y_test = y_test.values
 
-    char_processor = tf.contrib.learn.preprocessing.ByteProcessor(
+    vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
         MAX_DOCUMENT_LENGTH)
 
-    x_transform_train = char_processor.fit_transform(x_train)
-    x_transform_test = char_processor.transform(x_test)
+    x_transform_train = vocab_processor.fit_transform(x_train)
+    x_transform_test = vocab_processor.transform(x_test)
 
     x_train = np.array(list(x_transform_train))
     x_test = np.array(list(x_transform_test))
 
-    return x_train, y_train, x_test, y_test
+    no_words = len(vocab_processor.vocabulary_)
+    print('Total words: %d' % no_words)
+
+    return x_train, y_train, x_test, y_test, no_words
 
 
 def plot_err_acc(err, acc):
