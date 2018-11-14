@@ -124,10 +124,10 @@ def char_rnn_model(x):
         byte_list = tf.unstack(byte_vectors, axis=1)
 
         cell = tf.nn.rnn_cell.GRUCell(HIDDEN_SIZE)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob=keep_prob)
         _, encoding = tf.nn.static_rnn(cell, byte_list, dtype=tf.float32)
 
-        encoding_dropout = tf.nn.dropout(encoding,keep_prob)
-        logits = tf.layers.dense(encoding_dropout, MAX_LABEL, activation=None)
+        logits = tf.layers.dense(encoding, MAX_LABEL, activation=None)
 
     return logits
 
@@ -141,10 +141,11 @@ def word_rnn_model(x, n_words):
         word_list = tf.unstack(word_vectors, axis=1)
 
         cell = tf.nn.rnn_cell.GRUCell(HIDDEN_SIZE)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob=keep_prob)
+        # encoding_dropout = tf.nn.dropout(cell, keep_prob)
         _, encoding = tf.nn.static_rnn(cell, word_list, dtype=tf.float32)
 
-        encoding_dropout = tf.nn.dropout(encoding, keep_prob)
-        logits = tf.layers.dense(encoding_dropout, MAX_LABEL, activation=None)
+        logits = tf.layers.dense(encoding, MAX_LABEL, activation=None)
 
     return logits
 
